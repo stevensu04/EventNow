@@ -1,0 +1,20 @@
+# Secrets & local data
+.env
+*.sqlite3
+project.zip
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Build output
+staticfiles/
+
+# OS / editor
+.DS_Store
+.vscode/
+.vercel
+.claude/
+.env.local

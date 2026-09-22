@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+{% load eventnow %}
+
+{% block title %}Create an event · EventNow{% endblock %}
+
+{% block content %}
+<div class="container pb-5">
+    <header class="page-head">
+        <a href="{% url 'dashboard' %}" class="small text-decoration-none fw-semibold"><i class="bi bi-arrow-left me-1"></i>Dashboard</a>
+        <h1 class="h2 fw-bold mt-2 mb-1">Create an event</h1>
+        <p class="text-muted mb-0">Describe it in a sentence and let AI draft it, or fill in the details yourself.</p>
+    </header>
+
+    <!-- Step 1: AI drafting -->
+    <div class="ai-panel mb-4">
+        <div class="position-relative" style="z-index:1">
+            <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                <h2 class="h6 fw-bold text-white mb-0"><i class="bi bi-magic me-2"></i>Draft with AI</h2>
+                {% if AI_ENABLED %}<span class="small opacity-75" id="aiRemaining">{{ ai_remaining }} request{{ ai_remaining|pluralize }} left today</span>{% endif %}
+            </div>
+            {% if AI_ENABLED %}
+            <div class="d-flex flex-column flex-sm-row gap-2">
+                <label for="ai-agent-input" class="visually-hidden">Describe your event</label>
+                <input type="text" id="ai-agent-input" class="form-control form-control-lg" maxlength="1000"
+                       placeholder="e.g. Web security workshop at UQ next Wednesday for 30 people">
+                <button class="btn btn-dark btn-lg text-nowrap px-4" id="ai-agent-btn" type="button">
+                    <span class="spinner-border spinner-border-sm me-2 btn-spinner"></span><span class="btn-label">Fill the form</span>
+                </button>
+            </div>
+            <div class="small mt-2 opacity-75" id="ai-agent-status" aria-live="polite">AI fills the fields below. Nothing is saved until you press Publish.</div>
+            {% else %}
+            <p class="small mb-0 opacity-75">AI drafting is switched off on this deployment. Fill in the form below instead.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Step 2: form -->
+        <div class="col-lg-8">
+            <form method="post" action="{% url 'create_event' %}" id="createEventForm" class="en-card p-4">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label" for="id_title">Event title</label>
+                    <input type="text" name="title" id="id_title" class="form-control form-control-lg" placeholder="Brisbane Web Dev Meetup" value="{{ form_data.title|default:'' }}" required maxlength="200">
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label" for="eventDate">Date</label>
+                        <input type="date" name="date" id="eventDate" class="form-control" min="{{ today|date:'Y-m-d' }}" value="{{ form_data.date|default:'' }}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="categorySelect">Category</label>
+                        <select name="category" id="categorySelect" class="form-select">
+                            {% for code, label in categories %}
+                            <option value="{{ code }}" {% if form_data.category == code %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="venueSelect">Venue</label>
+                        <select name="location" id="venueSelect" class="form-select" required>
+                            <option value="" disabled {% if not form_data.location %}selected{% endif %}>Choose a venue…</option>
+                            {% for venue in brisbane_venues %}
+                            <option value="{{ venue }}" {% if form_data.location == venue %}selected{% endif %}>{{ venue }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="capacityInput">Capacity</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-people"></i></span>
+                            <input type="number" name="capacity" id="capacityInput" class="form-control" min="1" placeholder="50" value="{{ form_data.capacity|default:'' }}" required>
+                        </div>
+                        <div id="capacityHint" class="form-text">Choose a venue to see its limit.</div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-end mb-1">
+                        <label class="form-label mb-0" for="id_description">Description</label>
+                        <span class="small text-muted" id="descCount">0 characters</span>
+                    </div>
+                    <textarea name="description" id="id_description" class="form-control" rows="6" placeholder="What will people get out of coming?" required>{{ form_data.description|default:'' }}</textarea>
+                </div>
+
+                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 pt-3 border-top">
+                    <p class="small text-muted mb-0"><i class="bi bi-info-circle me-1"></i>You'll add sessions on the next step.</p>
+                    <button type="submit" id="submitBtn" class="btn btn-primary btn-lg px-4" data-loading>
+                        <span class="spinner-border spinner-border-sm me-2 btn-spinner"></span><span class="btn-label">Publish &amp; add sessions <i class="bi bi-arrow-right ms-1"></i></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4 d-flex flex-column gap-4">
+            <div class="en-card p-4" id="venueInfoCard">
+                <h2 class="h6 fw-bold mb-3"><i class="bi bi-building me-2 text-primary"></i>Venue spaces</h2>
+                <div id="venueInfoContent">
+                    <p class="small text-muted mb-0">Choose a venue to see the rooms and how many people each holds.</p>
+                </div>
+            </div>
+
+            {% if AI_ENABLED %}
+            <div class="en-card p-4">
+                <h2 class="h6 fw-bold mb-1"><i class="bi bi-stars me-2 text-primary"></i>Description helper</h2>
+                <p class="small text-muted mb-3">Type a title, then generate a catchy three-sentence blurb.</p>
+                <div id="create-ai-output" class="mb-2" aria-live="polite"></div>
+                <button id="create-ai-btn" type="button" class="btn btn-soft w-100"
+                        hx-post="{% url 'generate_ai_description_simple' %}"
+                        hx-target="#create-ai-output"
+                        hx-include="#id_title"
+                        hx-disabled-elt="this">
+                    <span class="spinner-border spinner-border-sm me-2 btn-spinner"></span><span class="btn-label">Generate blurb</span>
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{{ brisbane_venues|json_script:"venue-data" }}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(() => {
+    const venues = JSON.parse(document.getElementById('venue-data').textContent);
+    const venueSelect = document.getElementById('venueSelect');
+    const capacity = document.getElementById('capacityInput');
+    const hint = document.getElementById('capacityHint');
+    const info = document.getElementById('venueInfoContent');
+    const submit = document.getElementById('submitBtn');
+    const desc = document.getElementById('id_description');
+    const descCount = document.getElementById('descCount');
+
+    const limitFor = v => Object.values(venues[v] || {}).reduce((a, b) => a + b, 0);
+    const escapeHtml = s => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
+    function renderVenue(fillCapacity) {
+        const v = venueSelect.value;
+        if (!v) return;
+        const total = limitFor(v);
+        if (fillCapacity && !capacity.value) capacity.value = total;
+        capacity.max = total;
+        info.innerHTML = Object.entries(venues[v]).map(([room, n]) => `
+            <div class="d-flex justify-content-between small py-2 border-bottom">
+                <span class="text-muted">${escapeHtml(room)}</span><span class="fw-semibold text-dark">${n}</span>
+            </div>`).join('') +
+            `<div class="d-flex justify-content-between pt-2"><span class="small fw-semibold">Total</span><span class="fw-bold text-dark">${total}</span></div>`;
+        validate();
+    }
+
+    function validate() {
+        const v = venueSelect.value;
+        if (!v) return;
+        const limit = limitFor(v), n = +capacity.value || 0;
+        const over = n > limit;
+        capacity.classList.toggle('is-invalid', over);
+        hint.className = 'form-text' + (over ? ' text-danger fw-semibold' : '');
+        hint.innerHTML = over ? `<i class="bi bi-exclamation-triangle me-1"></i>Exceeds the venue limit of ${limit}`
+                              : `<i class="bi bi-check-circle me-1 text-success"></i>Up to ${limit} at this venue`;
+        submit.disabled = over;
+    }
+
+    const updateCount = () => descCount.textContent = `${desc.value.length} characters`;
+
+    venueSelect.addEventListener('change', () => renderVenue(true));
+    capacity.addEventListener('input', validate);
+    desc.addEventListener('input', updateCount);
+    renderVenue(false);
+    updateCount();
+
+    // Natural language → form fields
+    const agentBtn = document.getElementById('ai-agent-btn');
+    if (!agentBtn) return;
+    const input = document.getElementById('ai-agent-input');
+    const status = document.getElementById('ai-agent-status');
+
+    async function runAgent() {
+        const prompt = input.value.trim();
+        if (!prompt) { input.focus(); status.textContent = 'Describe your event first. Even one sentence is enough.'; return; }
+        agentBtn.classList.add('is-loading'); agentBtn.disabled = true;
+        status.textContent = 'Drafting your event…';
+        try {
+            const res = await fetch("{% url 'agentic_parser' %}", {
+                method: 'POST',
+                headers: { 'X-CSRFToken': '{{ csrf_token }}', 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ prompt }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Something went wrong.');
+
+            const set = (id, value) => { const el = document.getElementById(id); if (value !== undefined && value !== '') el.value = value; };
+            set('id_title', data.title);
+            set('eventDate', data.date);
+            set('categorySelect', data.category);
+            set('venueSelect', data.location);
+            set('capacityInput', data.capacity);
+            set('id_description', data.description);
+            renderVenue(false); updateCount();
+
+            document.querySelectorAll('#createEventForm .form-control, #createEventForm .form-select').forEach(el => {
+                el.style.transition = 'background-color .8s'; el.style.backgroundColor = '#f4f1ff';
+                setTimeout(() => el.style.backgroundColor = '', 900);
+            });
+            status.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Draft ready. Review the details below, then publish.';
+            if (data.remaining !== undefined) document.getElementById('aiRemaining').textContent = `${data.remaining} request${data.remaining === 1 ? '' : 's'} left today`;
+        } catch (err) {
+            status.innerHTML = `<i class="bi bi-exclamation-circle me-1"></i>${escapeHtml(err.message)}`;
+        } finally {
+            agentBtn.classList.remove('is-loading'); agentBtn.disabled = false;
+        }
+    }
+    agentBtn.addEventListener('click', runAgent);
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); runAgent(); } });
+})();
+</script>
+{% endblock %}

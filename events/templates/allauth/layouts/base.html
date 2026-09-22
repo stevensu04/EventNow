@@ -1,0 +1,6 @@
+{% extends 'base.html' %}
+{# allauth's secondary pages (password reset, logout confirmation, email, ...) fill `content`; #}
+{# the body class lets the stylesheet present them as a centred auth card. #}
+{% block title %}{% block head_title %}{% endblock %} · EventNow{% endblock %}
+{% block body_class %}allauth-page{% endblock %}
+{% block footer_section %}{% endblock %}

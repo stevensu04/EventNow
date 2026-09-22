@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block title %}Pricing · EventNow{% endblock %}
+
+{% block content %}
+<section class="search-hero text-center pb-4">
+    <div class="container">
+        <div class="eyebrow mb-2">Pricing</div>
+        <h1 class="fw-bold mb-2">Simple plans for every organiser</h1>
+        <p class="text-muted mx-auto mb-0" style="max-width: 34rem;">Attending is always free. Hosting starts on Professional.</p>
+        <div class="d-inline-flex align-items-center gap-2 mt-3 px-3 py-2 rounded-pill small" style="background: var(--en-violet-50); color: var(--en-violet-700);">
+            <i class="bi bi-info-circle"></i>Portfolio demo: upgrades are instant and no payment is taken.
+        </div>
+    </div>
+</section>
+
+<section class="container pb-5">
+    <div class="row g-4 justify-content-center align-items-stretch pt-3">
+        {% with plan=subscription.plan %}
+        <div class="col-md-6 col-lg-4">
+            <div class="en-card price-card {% if plan == 'free' %}is-featured{% endif %}">
+                {% if plan == 'free' %}<span class="ribbon">Your plan</span>{% endif %}
+                <h2 class="h5 fw-bold mb-1">Free</h2>
+                <p class="small text-muted">For attendees and the curious.</p>
+                <div class="price">$0<span class="fs-6 text-muted fw-semibold">/mo</span></div>
+                <ul>
+                    <li><i class="bi bi-check-lg"></i>Register for any event</li>
+                    <li><i class="bi bi-check-lg"></i>Tickets with calendar export</li>
+                    <li><i class="bi bi-check-lg"></i>Organiser dashboard</li>
+                    <li class="off"><i class="bi bi-x-lg"></i>Create &amp; host events</li>
+                    <li class="off"><i class="bi bi-x-lg"></i>AI drafting</li>
+                </ul>
+                {% if not user.is_authenticated %}
+                    <a href="{% url 'account_signup' %}" class="btn btn-ghost w-100">Sign up free</a>
+                {% elif plan == 'free' %}
+                    <button class="btn btn-ghost w-100" disabled>Current plan</button>
+                {% else %}
+                    <form method="post" action="{% url 'switch_plan' %}">{% csrf_token %}<input type="hidden" name="plan" value="free"><button class="btn btn-ghost w-100">Switch to Free</button></form>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+            <div class="en-card price-card {% if plan != 'free' %}is-featured{% endif %}">
+                <span class="ribbon">{% if plan == 'pro' %}Your plan{% else %}Most popular{% endif %}</span>
+                <h2 class="h5 fw-bold mb-1">Professional</h2>
+                <p class="small text-muted">For meetup hosts and small teams.</p>
+                <div class="price">$29<span class="fs-6 text-muted fw-semibold">/mo</span></div>
+                <ul>
+                    <li><i class="bi bi-check-lg"></i><span><strong>Unlimited</strong> events</span></li>
+                    <li><i class="bi bi-check-lg"></i>Parallel sessions &amp; room limits</li>
+                    <li><i class="bi bi-check-lg"></i>Live check-in &amp; CSV export</li>
+                    <li><i class="bi bi-check-lg"></i>AI event drafting</li>
+                    <li><i class="bi bi-check-lg"></i>Priority support</li>
+                </ul>
+                {% if not user.is_authenticated %}
+                    <a href="{% url 'account_signup' %}" class="btn btn-gradient w-100">Start hosting</a>
+                {% elif plan == 'pro' %}
+                    <a href="{% url 'create_event' %}" class="btn btn-primary w-100">Create an event</a>
+                {% else %}
+                    <form method="post" action="{% url 'switch_plan' %}">
+                        {% csrf_token %}<input type="hidden" name="plan" value="pro">
+                        <button class="btn btn-gradient w-100" data-loading><span class="spinner-border spinner-border-sm me-2 btn-spinner"></span><span class="btn-label">Upgrade (free demo)</span></button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+            <div class="en-card price-card" style="background: #fbfaff;">
+                <h2 class="h5 fw-bold mb-1">Enterprise <span class="en-badge st-expired ms-1">Soon</span></h2>
+                <p class="small text-muted">For venues and conference teams.</p>
+                <div class="price" style="font-size: 2rem;">Custom</div>
+                <ul>
+                    <li><i class="bi bi-check-lg"></i>Custom venue integration</li>
+                    <li><i class="bi bi-check-lg"></i>Multi-user team access</li>
+                    <li><i class="bi bi-check-lg"></i>SSO &amp; audit logs</li>
+                    <li><i class="bi bi-check-lg"></i>Dedicated success manager</li>
+                </ul>
+                <button class="btn btn-ghost w-100" disabled>Coming soon</button>
+            </div>
+        </div>
+        {% endwith %}
+    </div>
+</section>
+{% endblock %}

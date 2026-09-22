@@ -1,0 +1,34 @@
+{% load eventnow %}
+{% with left=event|spots_left %}
+<a href="{% url 'event_detail' event.id %}" class="en-card en-card-hover d-flex flex-column h-100 overflow-hidden text-decoration-none">
+    <div class="event-cover cover-{{ event.category }}">
+        <i class="bi {{ event.category|category_icon }} cover-icon" aria-hidden="true"></i>
+        <div class="d-flex justify-content-between align-items-end w-100 position-relative">
+            <span class="cat-chip"><i class="bi {{ event.category|category_icon }}"></i>{{ event.get_category_display }}</span>
+            <div class="date-chip">
+                <div class="m">{{ event.date|date:"M" }}</div>
+                <div class="d">{{ event.date|date:"j" }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="p-3 p-md-4 d-flex flex-column flex-grow-1">
+        <h3 class="h5 fw-bold mb-2 text-truncate" title="{{ event.title }}">{{ event.title }}</h3>
+        <div class="meta mb-1"><i class="bi bi-calendar3"></i>{{ event.date|date:"l, j F" }}</div>
+        <div class="meta mb-3"><i class="bi bi-geo-alt"></i><span class="text-truncate">{{ event.location }}</span></div>
+
+        <div class="mt-auto">
+            <div class="d-flex justify-content-between align-items-center mb-2 small">
+                {% if event.status == 'full' or left == 0 %}
+                    <span class="fw-semibold text-muted">Sold out</span>
+                {% elif left <= 10 %}
+                    <span class="urgency"><span class="dot"></span>Only {{ left }} spot{{ left|pluralize }} left</span>
+                {% else %}
+                    <span class="text-muted">{{ left }} spots left</span>
+                {% endif %}
+                <span class="text-muted">{{ event.registered }}/{{ event.capacity }}</span>
+            </div>
+            <div class="seat-bar {% seat_state event.registered event.capacity %}"><span data-fill="{{ event.registered|percent_of:event.capacity }}"></span></div>
+        </div>
+    </div>
+</a>
+{% endwith %}

@@ -1,0 +1,43 @@
+{% for item in session_data %}
+<div class="tab-pane fade {% if item.key == active_tab %}show active{% endif %}" id="pane-{{ item.key }}" role="tabpanel" aria-labelledby="tab-{{ item.key }}">
+    <div class="en-card overflow-hidden">
+        {% if item.page_obj.paginator.count %}
+        <div class="table-responsive">
+            <table class="table en-table">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Attendee</th>
+                        <th class="d-none d-md-table-cell">Registered</th>
+                        <th class="text-end pe-4">Check-in</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for attendee in item.page_obj %}
+                        {% include 'partials/single_attendee_row.html' %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state py-5">
+            <span class="feature-icon tone-violet"><i class="bi bi-person-dash"></i></span>
+            <p class="text-muted mb-0">{% if query %}No one matches “{{ query }}”.{% else %}No registrations here yet.{% endif %}</p>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if item.page_obj.has_other_pages %}
+    <nav class="d-flex justify-content-between align-items-center mt-3" aria-label="{{ item.title }} pages">
+        <span class="small text-muted">Page {{ item.page_obj.number }} of {{ item.page_obj.paginator.num_pages }}</span>
+        <div class="d-flex gap-2">
+            {% if item.page_obj.has_previous %}
+            <button class="btn btn-ghost btn-sm" hx-get="?{{ item.page_var }}={{ item.page_obj.previous_page_number }}&tab={{ item.key }}{% if query %}&q={{ query|urlencode }}{% endif %}" hx-target="#attendee-panels"><i class="bi bi-chevron-left"></i> Previous</button>
+            {% endif %}
+            {% if item.page_obj.has_next %}
+            <button class="btn btn-ghost btn-sm" hx-get="?{{ item.page_var }}={{ item.page_obj.next_page_number }}&tab={{ item.key }}{% if query %}&q={{ query|urlencode }}{% endif %}" hx-target="#attendee-panels">Next <i class="bi bi-chevron-right"></i></button>
+            {% endif %}
+        </div>
+    </nav>
+    {% endif %}
+</div>
+{% endfor %}

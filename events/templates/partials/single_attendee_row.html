@@ -1,0 +1,32 @@
+{% load eventnow %}
+<tr id="attendee-row-{{ attendee.id }}">
+    <td class="ps-4">
+        <div class="d-flex align-items-center gap-3">
+            <span class="avatar-initial">{{ attendee.full_name|initials }}</span>
+            <div class="min-w-0">
+                <div class="fw-semibold text-dark text-truncate">{{ attendee.full_name }}</div>
+                <div class="small text-muted text-truncate">{{ attendee.email }}</div>
+            </div>
+        </div>
+    </td>
+    <td class="d-none d-md-table-cell small text-muted text-nowrap">{{ attendee.registration_date|date:"j M, H:i" }}</td>
+    <td class="text-end pe-4 text-nowrap">
+        {% if attendee.status == 'confirmed' %}
+            <button class="btn btn-soft btn-sm" hx-post="{% url 'update_attendee_status' attendee.id %}" hx-vals='{"status": "attended"}'
+                    hx-target="closest tr" hx-swap="outerHTML" hx-disabled-elt="this">
+                <i class="bi bi-person-check me-1"></i>Check in
+            </button>
+            <button class="btn btn-ghost btn-icon btn-sm ms-1" hx-post="{% url 'update_attendee_status' attendee.id %}" hx-vals='{"status": "cancelled"}'
+                    hx-target="closest tr" hx-swap="outerHTML" hx-confirm="Cancel {{ attendee.full_name }}'s registration?"
+                    data-bs-toggle="tooltip" title="Cancel registration" aria-label="Cancel registration">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        {% else %}
+            <span class="en-badge st-{{ attendee.status }}">{% if attendee.status == 'attended' %}Checked in{% else %}Cancelled{% endif %}</span>
+            <button class="btn btn-ghost btn-icon btn-sm ms-1" hx-post="{% url 'update_attendee_status' attendee.id %}" hx-vals='{"status": "confirmed"}'
+                    hx-target="closest tr" hx-swap="outerHTML" aria-label="Undo" title="Undo">
+                <i class="bi bi-arrow-counterclockwise"></i>
+            </button>
+        {% endif %}
+    </td>
+</tr>

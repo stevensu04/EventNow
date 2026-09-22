@@ -1,0 +1,201 @@
+{% extends 'base.html' %}
+{% load eventnow %}
+
+{% block title %}{{ event.title }} · EventNow{% endblock %}
+{% block meta_description %}{{ event.description|truncatechars:150 }}{% endblock %}
+
+{% block content %}
+<section class="detail-hero">
+    <div class="container">
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb small mb-0">
+                <li class="breadcrumb-item"><a href="{% url 'event_list' %}" class="text-decoration-none">Events</a></li>
+                <li class="breadcrumb-item active text-truncate" aria-current="page" style="max-width: 60vw;">{{ event.title }}</li>
+            </ol>
+        </nav>
+
+        <div class="event-cover detail-cover cover-{{ event.category }}">
+            <i class="bi {{ event.category|category_icon }} cover-icon" aria-hidden="true"></i>
+            <div class="position-relative">
+                <div class="d-flex gap-2 mb-3">
+                    <span class="cat-chip"><i class="bi {{ event.category|category_icon }}"></i>{{ event.get_category_display }}</span>
+                    {% if event.status != 'active' %}<span class="cat-chip">{{ event.get_status_display }}</span>{% endif %}
+                </div>
+                <h1 class="text-white fw-bold mb-0" style="font-size: clamp(1.75rem, 4vw, 2.75rem); max-width: 40rem;">{{ event.title }}</h1>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="container py-4 py-lg-5">
+    <div class="row g-4 g-lg-5">
+        <div class="col-lg-7">
+            <div class="row g-3 mb-4">
+                <div class="col-sm-6">
+                    <div class="en-card p-3 d-flex gap-3 align-items-center h-100">
+                        <span class="feature-icon tone-violet"><i class="bi bi-calendar3"></i></span>
+                        <div><div class="small text-muted">Date</div><div class="fw-semibold text-dark">{{ event.date|date:"l, j F Y" }}</div></div>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="en-card p-3 d-flex gap-3 align-items-center h-100">
+                        <span class="feature-icon tone-coral"><i class="bi bi-geo-alt"></i></span>
+                        <div><div class="small text-muted">Venue</div><div class="fw-semibold text-dark">{{ event.location }}</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <h2 class="h5 fw-bold mb-3">About this event</h2>
+            <div class="text-body mb-5" style="line-height: 1.75;">{{ event.description|linebreaks }}</div>
+
+            <div class="d-flex justify-content-between align-items-end mb-3">
+                <div>
+                    <h2 class="h5 fw-bold mb-1">Choose your sessions</h2>
+                    <p class="text-muted small mb-0">Pick as many as you like; each room has its own limit.</p>
+                </div>
+                <span class="small text-muted">{{ sessions|length }} session{{ sessions|length|pluralize }}</span>
+            </div>
+
+            <div class="d-flex flex-column gap-2">
+                {% for session in sessions %}
+                {% if session.registered >= session.max_capacity %}
+                <div class="session-option is-disabled" aria-disabled="true">
+                    <input class="form-check-input" type="checkbox" disabled aria-label="{{ session.title }} (full)">
+                {% else %}
+                <label class="session-option">
+                    <input class="form-check-input" type="checkbox" name="sessions" value="{{ session.id }}" form="registrationForm" {% if not is_open %}disabled{% endif %}>
+                {% endif %}
+                    <div class="time small">{{ session.start_time|time:"H:i" }}<div class="text-muted fw-normal" style="font-size:.72rem">to {{ session.end_time|time:"H:i" }}</div></div>
+                    <div class="flex-grow-1 min-w-0">
+                        <div class="fw-semibold text-dark">{{ session.title }}</div>
+                        <div class="small text-muted d-flex flex-wrap gap-x-3 column-gap-3">
+                            <span><i class="bi bi-mic me-1"></i>{{ session.speaker }}</span>
+                            <span><i class="bi bi-door-open me-1"></i>{{ session.track }}</span>
+                        </div>
+                    </div>
+                    <div class="text-end small flex-shrink-0">
+                        {% if session.registered >= session.max_capacity %}
+                            <span class="en-badge st-expired">Full</span>
+                        {% else %}
+                            <span class="text-muted">{{ session.registered }}/{{ session.max_capacity }}</span>
+                        {% endif %}
+                    </div>
+                {% if session.registered >= session.max_capacity %}</div>{% else %}</label>{% endif %}
+                {% empty %}
+                <div class="en-card empty-state py-4">
+                    <p class="text-muted mb-0"><i class="bi bi-clock me-1"></i>The schedule is coming soon. You can still register now.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="en-card p-4 p-md-4 register-card" style="box-shadow: var(--en-shadow);">
+                {% if can_manage %}
+                <div class="alert alert-light border small d-flex justify-content-between align-items-center py-2 mb-3">
+                    <span><i class="bi bi-person-badge me-1"></i>You organise this event</span>
+                    <a href="{% url 'manage_attendees' event.id %}" class="fw-semibold text-decoration-none">Manage</a>
+                </div>
+                {% endif %}
+
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h2 class="h5 fw-bold mb-0">Register</h2>
+                    <span class="en-badge st-{{ event.status }}">{{ event.get_status_display }}</span>
+                </div>
+
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between small mb-2">
+                        {% if spots_left == 0 %}
+                            <span class="fw-semibold text-muted">Sold out</span>
+                        {% elif spots_left <= 10 %}
+                            <span class="urgency"><span class="dot"></span>Only {{ spots_left }} spot{{ spots_left|pluralize }} left</span>
+                        {% else %}
+                            <span class="text-muted">{{ spots_left }} of {{ event.capacity }} spots left</span>
+                        {% endif %}
+                        <span class="text-muted">{{ event.registered|percent_of:event.capacity }}% full</span>
+                    </div>
+                    <div class="seat-bar {% seat_state event.registered event.capacity %}"><span data-fill="{{ event.registered|percent_of:event.capacity }}"></span></div>
+                </div>
+
+                {% if is_open %}
+                <form method="post" action="{% url 'register_event' event.id %}" id="registrationForm" novalidate>
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="full_name" class="form-label">Full name</label>
+                        <input type="text" id="full_name" name="full_name" class="form-control" autocomplete="name" placeholder="Alex Taylor" required maxlength="100">
+                        <div class="invalid-feedback">Please tell us your name.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" id="email" name="email" class="form-control" autocomplete="email" placeholder="alex@example.com" required>
+                        <div class="invalid-feedback">Please enter a valid email.</div>
+                    </div>
+                    <p class="small text-muted mb-3" id="sessionSummary"><i class="bi bi-list-check me-1"></i>No sessions selected yet</p>
+                    <button type="submit" class="btn btn-gradient w-100 btn-lg" data-loading>
+                        <span class="spinner-border spinner-border-sm me-2 btn-spinner" aria-hidden="true"></span>
+                        <span class="btn-label">Get my ticket</span>
+                    </button>
+                    <p class="small text-muted text-center mt-3 mb-0"><i class="bi bi-shield-check me-1"></i>Free · No account needed · Add to calendar after</p>
+                </form>
+                {% else %}
+                <div class="text-center py-3">
+                    <span class="feature-icon tone-violet mb-3"><i class="bi bi-hourglass-split"></i></span>
+                    <p class="fw-semibold text-dark mb-1">Registration is closed</p>
+                    <p class="small text-muted mb-3">{% if spots_left == 0 %}This one sold out. There are more events coming up.{% else %}This event is no longer taking registrations.{% endif %}</p>
+                    <a href="{% url 'event_list' %}" class="btn btn-ghost w-100">Browse other events</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+{% if is_open %}
+<div class="mobile-cta d-lg-none" id="mobileCta">
+    <div class="small">
+        <div class="fw-semibold text-dark">Free · {{ event.date|date:"D j M" }}</div>
+        {% if spots_left <= 10 %}<span class="urgency"><span class="dot"></span>{{ spots_left }} left</span>{% else %}<span class="text-muted">{{ spots_left }} spots left</span>{% endif %}
+    </div>
+    <a href="#registrationForm" class="btn btn-gradient px-4">Register</a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block body_class %}{% if is_open %}has-mobile-cta{% endif %}{% endblock %}
+
+{% block extra_js %}
+<script>
+(() => {
+    const form = document.getElementById('registrationForm');
+    if (!form) return;
+
+    // Hide the sticky mobile CTA once the real form is on screen
+    const cta = document.getElementById('mobileCta');
+    if (cta) new IntersectionObserver(([entry]) => cta.classList.toggle('is-hidden', entry.isIntersecting)).observe(form);
+    cta?.querySelector('a').addEventListener('click', e => {
+        e.preventDefault();
+        form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => document.getElementById('full_name').focus({ preventScroll: true }), 500);
+    });
+    const summary = document.getElementById('sessionSummary');
+    const boxes = document.querySelectorAll('input[name="sessions"]');
+
+    const update = () => {
+        const n = [...boxes].filter(b => b.checked).length;
+        summary.innerHTML = n
+            ? `<i class="bi bi-check2-circle me-1 text-success"></i><strong class="text-dark">${n}</strong> session${n > 1 ? 's' : ''} selected`
+            : '<i class="bi bi-list-check me-1"></i>No sessions selected yet';
+    };
+    boxes.forEach(b => b.addEventListener('change', update));
+
+    form.addEventListener('submit', e => {
+        if (!form.checkValidity()) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            form.classList.add('was-validated');
+            form.querySelector(':invalid').focus();
+        }
+    }, true);
+})();
+</script>
+{% endblock %}

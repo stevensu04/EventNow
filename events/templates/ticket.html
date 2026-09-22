@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% load eventnow %}
+
+{% block title %}Your ticket · {{ event.title }}{% endblock %}
+{% block extra_css %}<meta name="robots" content="noindex">{% endblock %}
+
+{% block content %}
+<section class="container py-5">
+    {% if just_registered %}
+    <div class="text-center mb-4">
+        <span class="check-burst mb-3"><i class="bi bi-check-lg"></i></span>
+        <h1 class="h2 fw-bold mb-1">You're in, {{ attendee.full_name.split.0 }}!</h1>
+        <p class="text-muted mb-0">Your spot is confirmed. Keep this page — it's your ticket.</p>
+    </div>
+    {% endif %}
+
+    <article class="ticket" aria-label="Event ticket">
+        <div class="ticket-head event-cover cover-{{ event.category }}" style="aspect-ratio:auto; display:block;">
+            <i class="bi {{ event.category|category_icon }} cover-icon" aria-hidden="true"></i>
+            <div class="position-relative">
+                <span class="cat-chip mb-3"><i class="bi bi-ticket-perforated"></i>Admit one</span>
+                <h2 class="h3 fw-bold text-white mb-1">{{ event.title }}</h2>
+                <div class="opacity-75">{{ event.date|date:"l, j F Y" }} · {{ event.location }}</div>
+            </div>
+        </div>
+
+        <div class="p-4">
+            <div class="row g-3">
+                <div class="col-6">
+                    <div class="small text-muted">Attendee</div>
+                    <div class="fw-semibold text-dark text-truncate">{{ attendee.full_name }}</div>
+                </div>
+                <div class="col-6">
+                    <div class="small text-muted">Status</div>
+                    <span class="en-badge st-{{ attendee.status }}">{{ attendee.status|capfirst }}</span>
+                </div>
+                <div class="col-6">
+                    <div class="small text-muted">Email</div>
+                    <div class="fw-semibold text-dark text-truncate">{{ attendee.email }}</div>
+                </div>
+                <div class="col-6">
+                    <div class="small text-muted">Ticket no.</div>
+                    <div class="fw-semibold text-dark font-monospace">EN-{{ event.id|stringformat:"03d" }}-{{ attendee.id|stringformat:"05d" }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="ticket-perf"></div>
+
+        <div class="p-4">
+            <div class="small text-muted mb-2">Your sessions</div>
+            {% for session in sessions %}
+            <div class="d-flex gap-3 py-2 {% if not forloop.last %}border-bottom{% endif %}">
+                <div class="fw-bold text-dark small" style="min-width: 88px;">{{ session.start_time|time:"H:i" }}–{{ session.end_time|time:"H:i" }}</div>
+                <div class="small"><div class="fw-semibold text-dark">{{ session.title }}</div><div class="text-muted">{{ session.track }} · {{ session.speaker }}</div></div>
+            </div>
+            {% empty %}
+            <p class="small text-muted mb-0">General admission, no specific sessions selected.</p>
+            {% endfor %}
+        </div>
+
+        <div class="p-4 pt-0 d-grid gap-2 d-sm-flex">
+            <a href="{% url 'ticket_ics' token %}" class="btn btn-primary flex-fill"><i class="bi bi-calendar-plus me-2"></i>Add to calendar</a>
+            <button type="button" class="btn btn-ghost flex-fill" id="copyLink"><i class="bi bi-link-45deg me-2"></i><span>Copy ticket link</span></button>
+        </div>
+    </article>
+
+    <div class="text-center mt-4">
+        <a href="{% url 'event_list' %}" class="text-decoration-none fw-semibold">Discover more events <i class="bi bi-arrow-right"></i></a>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('copyLink').addEventListener('click', async function () {
+    const url = window.location.href.split('?')[0];
+    try {
+        await navigator.clipboard.writeText(url);
+        this.querySelector('span').textContent = 'Link copied!';
+        setTimeout(() => this.querySelector('span').textContent = 'Copy ticket link', 2000);
+    } catch { window.prompt('Copy your ticket link:', url); }
+});
+</script>
+{% if just_registered %}
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<script>
+if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches && window.confetti) {
+    const colors = ['#6841f5', '#b24dff', '#ff5d7a', '#ffb020'];
+    confetti({ particleCount: 90, spread: 75, origin: { y: 0.3 }, colors });
+    setTimeout(() => confetti({ particleCount: 50, angle: 60, spread: 60, origin: { x: 0, y: 0.5 }, colors }), 250);
+    setTimeout(() => confetti({ particleCount: 50, angle: 120, spread: 60, origin: { x: 1, y: 0.5 }, colors }), 400);
+}
+// Drop ?new=1 so a refresh or shared link doesn't replay the celebration
+history.replaceState(null, '', window.location.pathname);
+</script>
+{% endif %}
+{% endblock %}

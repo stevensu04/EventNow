@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+
+{% block title %}Attendees · {{ event.title }}{% endblock %}
+
+{% block content %}
+<div class="container pb-5">
+    <header class="page-head d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3">
+        <div>
+            <a href="{% url 'dashboard' %}" class="small text-decoration-none fw-semibold"><i class="bi bi-arrow-left me-1"></i>Dashboard</a>
+            <h1 class="h2 fw-bold mt-2 mb-1">Attendees &amp; check-in</h1>
+            <p class="text-muted mb-0">{{ event.title }} · {{ event.date|date:"D j M Y" }}</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'manage_sessions' event.id %}" class="btn btn-ghost"><i class="bi bi-calendar3-week me-1"></i>Sessions</a>
+            <a href="{% url 'export_attendees_csv' event.id %}" class="btn btn-primary"><i class="bi bi-download me-1"></i>Export CSV</a>
+        </div>
+    </header>
+
+    <div class="row g-3 mb-4">
+        <div class="col-4">
+            <div class="en-card kpi"><div class="label">Confirmed</div><div class="value">{{ counts.confirmed }}</div></div>
+        </div>
+        <div class="col-4">
+            <div class="en-card kpi"><div class="label">Checked in</div><div class="value" style="color: var(--en-mint-500)">{{ counts.attended }}</div></div>
+        </div>
+        <div class="col-4">
+            <div class="en-card kpi"><div class="label">Cancelled</div><div class="value text-muted">{{ counts.cancelled }}</div></div>
+        </div>
+    </div>
+
+    <div class="en-card p-2 mb-3">
+        <div class="d-flex align-items-center gap-2 px-2">
+            <i class="bi bi-search text-muted"></i>
+            <label for="attendeeSearch" class="visually-hidden">Search attendees</label>
+            <input type="search" id="attendeeSearch" name="q" value="{{ query }}" class="form-control border-0 shadow-none"
+                   placeholder="Search by name or email…" autocomplete="off"
+                   hx-get="{% url 'manage_attendees' event.id %}"
+                   hx-trigger="input changed delay:350ms, search"
+                   hx-target="#attendee-panels"
+                   hx-indicator="#searchSpinner">
+            <span id="searchSpinner" class="htmx-indicator spinner-border spinner-border-sm text-primary"></span>
+        </div>
+    </div>
+
+    <ul class="nav nav-tabs-en mb-3 pb-1" id="sessionTabs" role="tablist">
+        {% for item in session_data %}
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {% if item.key == active_tab %}active{% endif %}" id="tab-{{ item.key }}"
+                    data-bs-toggle="tab" data-bs-target="#pane-{{ item.key }}" type="button" role="tab"
+                    aria-controls="pane-{{ item.key }}" aria-selected="{% if item.key == active_tab %}true{% else %}false{% endif %}">
+                {% if item.key == 'all' %}<i class="bi bi-people me-1"></i>{% endif %}{{ item.title }}
+                <span class="ms-1 opacity-75">{{ item.page_obj.paginator.count }}</span>
+            </button>
+        </li>
+        {% endfor %}
+    </ul>
+
+    <div class="tab-content" id="attendee-panels">
+        {% include 'partials/attendee_session_panels.html' %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// A search re-renders every panel with the "All" tab active, so sync the tab bar with it
+document.body.addEventListener('htmx:afterSwap', e => {
+    if (e.detail.target.id !== 'attendee-panels') return;
+    const active = document.querySelector('#attendee-panels .tab-pane.active');
+    if (!active) return;
+    document.querySelectorAll('#sessionTabs .nav-link').forEach(btn => {
+        const on = btn.dataset.bsTarget === '#' + active.id;
+        btn.classList.toggle('active', on);
+        btn.setAttribute('aria-selected', on);
+    });
+});
+</script>
+{% endblock %}

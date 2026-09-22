@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}About · EventNow{% endblock %}
+
+{% block content %}
+<section class="hero pb-5">
+    <div class="container">
+        <div class="row justify-content-center text-center">
+            <div class="col-lg-8">
+                <div class="eyebrow mb-2">About</div>
+                <h1 class="mb-3" style="font-size: clamp(2rem, 4.5vw, 3.25rem);">Made for <span class="text-gradient">Brisbane's</span> small and mid-sized events</h1>
+                <p class="lead mx-auto">Enterprise event platforms are built for 10,000-person conferences. EventNow is for the 30-person workshop, the 150-seat pitch night and the university seminar.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section-sm">
+    <div class="container">
+        <div class="row g-5 align-items-center">
+            <div class="col-lg-6 reveal">
+                <img src="{% static 'Brisbane Tech Seminar 2026.jpg' %}" alt="A seminar in progress" class="img-fluid rounded-4 shadow" style="aspect-ratio: 4/3; object-fit: cover;">
+            </div>
+            <div class="col-lg-6 reveal">
+                <h2 class="fw-bold mb-3">Why EventNow</h2>
+                <p class="text-muted mb-4">It started as a university project about one question: what does a local organiser actually need? The answer was a tool that knows how many people each room holds, runs parallel sessions and gets people through the door. Not much else.</p>
+                <div class="d-flex gap-3 mb-3">
+                    <span class="feature-icon tone-violet flex-shrink-0"><i class="bi bi-geo-alt"></i></span>
+                    <div><h3 class="h6 fw-bold mb-1">Local by design</h3><p class="small text-muted mb-0">Venue room capacities from South Bank to St Lucia are built in, so an event can't be overbooked.</p></div>
+                </div>
+                <div class="d-flex gap-3 mb-3">
+                    <span class="feature-icon tone-coral flex-shrink-0"><i class="bi bi-diagram-3"></i></span>
+                    <div><h3 class="h6 fw-bold mb-1">Parallel tracks</h3><p class="small text-muted mb-0">Attendees choose the sessions they want, and each room enforces its own limit.</p></div>
+                </div>
+                <div class="d-flex gap-3">
+                    <span class="feature-icon tone-mint flex-shrink-0"><i class="bi bi-lightning-charge"></i></span>
+                    <div><h3 class="h6 fw-bold mb-1">Fast for everyone</h3><p class="small text-muted mb-0">Registering takes under a minute and needs no account. Check-in updates instantly.</p></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section-sm">
+    <div class="container">
+        <div class="en-card p-4 p-md-5 reveal">
+            <div class="row g-4 align-items-center">
+                <div class="col-lg-5">
+                    <div class="eyebrow mb-2">Under the hood</div>
+                    <h2 class="h3 fw-bold mb-2">Built with</h2>
+                    <p class="text-muted mb-0">A server-rendered Django app with HTMX for the interactive parts. No heavy frontend framework.</p>
+                </div>
+                <div class="col-lg-7">
+                    <div class="d-flex flex-wrap gap-2">
+                        <span class="filter-chip">Django 6</span>
+                        <span class="filter-chip">HTMX</span>
+                        <span class="filter-chip">Bootstrap 5</span>
+                        <span class="filter-chip">PostgreSQL · Neon</span>
+                        <span class="filter-chip">Django REST Framework</span>
+                        <span class="filter-chip">django-allauth</span>
+                        <span class="filter-chip">OpenAI API</span>
+                        <span class="filter-chip">Vercel</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

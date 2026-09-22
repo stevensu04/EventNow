@@ -1,0 +1,5 @@
+<div class="ai-result small mb-2">{{ ai_content }}</div>
+<button type="button" class="btn btn-soft btn-sm w-100" data-text="{{ ai_plain }}"
+        onclick="const f = document.getElementById('id_description'); f.value = this.dataset.text; f.focus(); f.dispatchEvent(new Event('input'));">
+    <i class="bi bi-arrow-left-short me-1"></i>Use this description
+</button>

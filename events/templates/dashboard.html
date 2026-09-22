@@ -1,0 +1,367 @@
+{% extends 'base.html' %}
+{% load eventnow %}
+
+{% block title %}Dashboard · EventNow{% endblock %}
+
+{% block content %}
+<div class="container pb-5">
+    <header class="page-head d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="eyebrow">Organiser dashboard</span>
+                {% if subscription.plan == 'pro' %}<span class="en-badge st-confirmed">Professional</span>{% else %}<span class="en-badge st-expired">Free plan</span>{% endif %}
+            </div>
+            <h1 class="h2 fw-bold mb-0">G'day, {{ user.first_name|default:user.username }} 👋</h1>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'event_list' %}" class="btn btn-ghost"><i class="bi bi-box-arrow-up-right me-1"></i>Public site</a>
+            <a href="{% url 'create_event' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>New event</a>
+        </div>
+    </header>
+
+    {% if not events and subscription.plan != 'pro' %}
+    <div class="cta-band mb-4">
+        <div class="row align-items-center g-3 position-relative" style="z-index:1">
+            <div class="col-lg-8">
+                <h2 class="h3 fw-bold mb-2">Ready to host your first event?</h2>
+                <p class="mb-0 opacity-75">Creating events is a Professional feature. In this demo, upgrading is free and instant.</p>
+            </div>
+            <div class="col-lg-4 text-lg-end">
+                <form method="post" action="{% url 'switch_plan' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="plan" value="pro">
+                    <button class="btn btn-light btn-lg fw-bold text-dark" data-loading>
+                        <span class="spinner-border spinner-border-sm me-2 btn-spinner"></span><span class="btn-label">Upgrade free <i class="bi bi-stars ms-1"></i></span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- KPIs -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="en-card kpi">
+                <div class="d-flex justify-content-between align-items-start mb-2"><span class="label">Live events</span><span class="feature-icon tone-violet"><i class="bi bi-calendar-check"></i></span></div>
+                <div class="value">{{ active_events_count }}</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="en-card kpi">
+                <div class="d-flex justify-content-between align-items-start mb-2"><span class="label">Registrations</span><span class="feature-icon tone-mint"><i class="bi bi-people"></i></span></div>
+                <div class="value">{{ total_registrations }}</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="en-card kpi">
+                <div class="d-flex justify-content-between align-items-start mb-2"><span class="label">Seats remaining</span><span class="feature-icon tone-amber"><i class="bi bi-ticket-perforated"></i></span></div>
+                <div class="value">{{ seats_remaining }}</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="en-card kpi">
+                <div class="d-flex justify-content-between align-items-start mb-2"><span class="label">Next event</span><span class="feature-icon tone-coral"><i class="bi bi-hourglass-split"></i></span></div>
+                {% if next_event %}
+                <div class="value">{% if next_event_days == 0 %}Today{% elif next_event_days == 1 %}Tomorrow{% else %}{{ next_event_days }}<span class="fs-6 fw-semibold text-muted ms-1">days</span>{% endif %}</div>
+                <a href="{% url 'event_detail' next_event.id %}" class="small text-muted text-truncate d-block text-decoration-none">{{ next_event.title }}</a>
+                {% else %}
+                <div class="value">—</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Events table -->
+        <div class="col-xl-8">
+            <div class="en-card overflow-hidden">
+                <div class="d-flex justify-content-between align-items-center p-3 px-md-4 border-bottom">
+                    <h2 class="h6 fw-bold mb-0">Your events</h2>
+                    <div class="form-check form-switch mb-0">
+                        <input class="form-check-input" type="checkbox" role="switch" id="hideFinished" checked>
+                        <label class="form-check-label small text-muted" for="hideFinished">Hide past &amp; cancelled</label>
+                    </div>
+                </div>
+
+                {% if events %}
+                <div class="table-responsive">
+                    <table class="table en-table">
+                        <thead>
+                            <tr>
+                                <th class="ps-4">Event</th>
+                                <th>Status</th>
+                                <th style="min-width: 150px;">Registrations</th>
+                                <th class="text-end pe-4">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for event in events %}
+                            <tr data-finished="{% if event.is_finished %}1{% else %}0{% endif %}">
+                                <td class="ps-4">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <span class="event-cover cover-{{ event.category }} rounded-3 p-0 justify-content-center align-items-center flex-shrink-0" style="width:44px;height:44px;aspect-ratio:1;">
+                                            <i class="bi {{ event.category|category_icon }} fs-5"></i>
+                                        </span>
+                                        <div class="min-w-0">
+                                            <a href="{% url 'event_detail' event.id %}" class="fw-semibold text-dark text-decoration-none d-block text-truncate" style="max-width: 260px;">{{ event.title }}</a>
+                                            <div class="small text-muted">{{ event.date|date:"D j M" }} · {{ event.location }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="en-badge st-{{ event.status }}">{{ event.get_status_display }}</span></td>
+                                <td>
+                                    <a href="{% url 'manage_attendees' event.id %}" class="text-decoration-none d-block" data-bs-toggle="tooltip" title="Manage attendees">
+                                        <div class="d-flex justify-content-between small mb-1">
+                                            <span class="fw-semibold text-dark">{{ event.registered }}<span class="text-muted fw-normal">/{{ event.capacity }}</span></span>
+                                            <span class="text-muted">{{ event.fill_percentage }}%</span>
+                                        </div>
+                                        <div class="seat-bar {% seat_state event.registered event.capacity %}"><span data-fill="{{ event.fill_percentage }}"></span></div>
+                                    </a>
+                                </td>
+                                <td class="text-end pe-4 text-nowrap">
+                                    <a href="{% url 'manage_sessions' event.id %}" class="btn btn-ghost btn-icon" data-bs-toggle="tooltip" title="Sessions ({{ event.session_count }})" aria-label="Manage sessions"><i class="bi bi-calendar3-week"></i></a>
+                                    <a href="{% url 'manage_attendees' event.id %}" class="btn btn-ghost btn-icon" data-bs-toggle="tooltip" title="Attendees &amp; check-in" aria-label="Manage attendees"><i class="bi bi-person-check"></i></a>
+                                    <div class="dropdown d-inline-block">
+                                        <button class="btn btn-ghost btn-icon" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More actions"><i class="bi bi-three-dots"></i></button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li><button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#editModal{{ event.id }}"><i class="bi bi-pencil me-2"></i>Edit details</button></li>
+                                            <li><button class="dropdown-item" data-bs-toggle="offcanvas" data-bs-target="#aiSidebar" data-ai-url="{% url 'generate_ai_description' event.id %}" data-ai-title="{{ event.title }}" data-ai-event="{{ event.id }}"><i class="bi bi-magic me-2"></i>Rewrite with AI</button></li>
+                                            <li><a class="dropdown-item" href="{% url 'export_attendees_csv' event.id %}"><i class="bi bi-download me-2"></i>Export CSV</a></li>
+                                            <li><a class="dropdown-item" href="{% url 'event_detail' event.id %}"><i class="bi bi-eye me-2"></i>View public page</a></li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <form method="post" action="{% url 'delete_event' event.id %}" onsubmit="return confirm('Archive “{{ event.title|escapejs }}”? It will be hidden from the public site.');">
+                                                    {% csrf_token %}
+                                                    <button class="dropdown-item text-danger"><i class="bi bi-archive me-2"></i>Archive</button>
+                                                </form>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="empty-state py-4 d-none" id="allHiddenState">
+                    <p class="text-muted small mb-0">All your events are past or cancelled. Toggle the switch to see them.</p>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <span class="feature-icon tone-violet"><i class="bi bi-calendar-plus"></i></span>
+                    <h3 class="h5 fw-bold">No events yet</h3>
+                    <p class="text-muted mx-auto mb-4" style="max-width: 24rem;">Create your first event. The AI can draft it for you from a single sentence.</p>
+                    <a href="{% url 'create_event' %}" class="btn btn-primary"><i class="bi bi-magic me-1"></i>Create an event</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Side column -->
+        <div class="col-xl-4 d-flex flex-column gap-4">
+            <div class="en-card">
+                <div class="p-3 px-4 border-bottom d-flex justify-content-between align-items-center">
+                    <h2 class="h6 fw-bold mb-0">Latest registrations</h2>
+                    <span class="urgency" style="color: var(--en-mint-500);"><span class="dot"></span>Live</span>
+                </div>
+                <ul class="list-unstyled mb-0">
+                    {% for a in recent_attendees %}
+                    <li class="d-flex align-items-center gap-3 px-4 py-3 {% if not forloop.last %}border-bottom{% endif %}">
+                        <span class="avatar-initial">{{ a.full_name|initials }}</span>
+                        <div class="min-w-0 flex-grow-1">
+                            <div class="fw-semibold text-dark small text-truncate">{{ a.full_name }}</div>
+                            <div class="text-muted text-truncate" style="font-size:.78rem">{{ a.event.title }}</div>
+                        </div>
+                        <span class="text-muted text-nowrap" style="font-size:.75rem">{{ a.registration_date|timesince|cut:" ago" }}</span>
+                    </li>
+                    {% empty %}
+                    <li class="px-4 py-4 text-center text-muted small">Registrations will appear here as they come in.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <div class="en-card p-4">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="feature-icon tone-violet" style="width:36px;height:36px;font-size:1rem"><i class="bi bi-stars"></i></span>
+                    <h2 class="h6 fw-bold mb-0">AI assistant</h2>
+                </div>
+                {% if AI_ENABLED %}
+                <p class="small text-muted mb-0">You have <strong class="text-dark">{{ ai_remaining }}</strong> AI request{{ ai_remaining|pluralize }} left today. Use them to draft new events or rewrite descriptions from the <i class="bi bi-three-dots"></i> menu.</p>
+                {% else %}
+                <p class="small text-muted mb-0">AI features are switched off on this deployment. Set <code>OPENAI_API_KEY</code> to turn them on.</p>
+                {% endif %}
+            </div>
+
+            {% if notifications %}
+            <div class="en-card">
+                <div class="p-3 px-4 border-bottom"><h2 class="h6 fw-bold mb-0">Announcements</h2></div>
+                {% for note in notifications %}
+                <div class="px-4 py-3 {% if not forloop.last %}border-bottom{% endif %}" data-note-id="{{ note.id }}">
+                    <div class="fw-semibold text-dark small note-title" {% if user.is_superuser %}contenteditable="true" title="Click to edit"{% endif %}>{{ note.title }}</div>
+                    <div class="small text-muted note-message" {% if user.is_superuser %}contenteditable="true" title="Click to edit"{% endif %}>{{ note.message }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Edit modals -->
+{% for event in events %}
+<div class="modal fade" id="editModal{{ event.id }}" tabindex="-1" aria-labelledby="editLabel{{ event.id }}" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <form method="post" action="{% url 'update_event' event.id %}" class="modal-content border-0 rounded-4 edit-event-form">
+            {% csrf_token %}
+            <div class="modal-header border-0 pb-0 px-4 pt-4">
+                <h2 class="modal-title h5 fw-bold" id="editLabel{{ event.id }}">Edit event</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body px-4">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label" for="title{{ event.id }}">Title</label>
+                        <input id="title{{ event.id }}" type="text" name="title" class="form-control" value="{{ event.title }}" required maxlength="200">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="desc{{ event.id }}">Description</label>
+                        <textarea id="desc{{ event.id }}" name="description" class="form-control" rows="4">{{ event.description }}</textarea>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="loc{{ event.id }}">Venue</label>
+                        <select id="loc{{ event.id }}" name="location" class="form-select venue-select">
+                            {% for venue, spaces in brisbane_venues.items %}
+                            <option value="{{ venue }}" data-limit="{% for s, l in spaces.items %}{{ l }}{% if not forloop.last %}+{% endif %}{% endfor %}" {% if event.location == venue %}selected{% endif %}>{{ venue }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="date{{ event.id }}">Date</label>
+                        <input id="date{{ event.id }}" type="date" name="date" class="form-control" value="{{ event.date|date:'Y-m-d' }}" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="cap{{ event.id }}">Capacity</label>
+                        <input id="cap{{ event.id }}" type="number" min="1" name="capacity" class="form-control capacity-input" value="{{ event.capacity }}" required>
+                        <div class="form-text capacity-hint">Venue max: {{ event.hard_limit }}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="cat{{ event.id }}">Category</label>
+                        <select id="cat{{ event.id }}" name="category" class="form-select">
+                            {% for code, label in categories %}<option value="{{ code }}" {% if event.category == code %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="st{{ event.id }}">Status</label>
+                        <select id="st{{ event.id }}" name="status" class="form-select">
+                            {% for code, label in event.STATUS_CHOICES %}<option value="{{ code }}" {% if event.status == code %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 px-4 pb-4">
+                <button type="button" class="btn btn-ghost" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary save-btn" data-loading><span class="spinner-border spinner-border-sm me-2 btn-spinner"></span><span class="btn-label">Save changes</span></button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endfor %}
+
+<!-- AI rewrite panel -->
+<div class="offcanvas offcanvas-end en-offcanvas border-0" tabindex="-1" id="aiSidebar" aria-labelledby="aiSidebarLabel">
+    <div class="offcanvas-header">
+        <h2 class="offcanvas-title h5 fw-bold text-white" id="aiSidebarLabel"><i class="bi bi-stars me-2"></i>AI rewrite</h2>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body d-flex flex-column">
+        <p class="small text-muted">A fresh, punchy description for <strong class="text-dark" id="aiEventTitle">your event</strong>. You'll be able to review it before saving.</p>
+        <div id="ai-output" class="flex-grow-1" aria-live="polite"></div>
+        <button id="ai-trigger-btn" class="btn btn-gradient w-100 mt-3" hx-post="" hx-target="#ai-output" hx-disabled-elt="this" {% if not AI_ENABLED %}disabled{% endif %}>
+            <span class="spinner-border spinner-border-sm me-2 btn-spinner"></span><span class="btn-label"><i class="bi bi-magic me-1"></i>Generate description</span>
+        </button>
+        <p class="small text-muted text-center mt-2 mb-0">{% if AI_ENABLED %}{{ ai_remaining }} request{{ ai_remaining|pluralize }} left today{% else %}AI is not configured on this deployment{% endif %}</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(() => {
+    // Hide past/cancelled events (on by default so the table focuses on what's live)
+    const toggle = document.getElementById('hideFinished');
+    const applyFilter = () => {
+        const rows = document.querySelectorAll('tbody tr[data-finished]');
+        let visible = 0;
+        rows.forEach(r => {
+            const hide = toggle.checked && r.dataset.finished === '1';
+            r.classList.toggle('d-none', hide);
+            if (!hide) visible++;
+        });
+        document.getElementById('allHiddenState')?.classList.toggle('d-none', visible > 0 || !rows.length);
+    };
+    toggle?.addEventListener('change', applyFilter);
+    applyFilter();
+
+    // Live venue-capacity check in the edit modals
+    document.querySelectorAll('.edit-event-form').forEach(form => {
+        const venue = form.querySelector('.venue-select');
+        const cap = form.querySelector('.capacity-input');
+        const hint = form.querySelector('.capacity-hint');
+        const save = form.querySelector('.save-btn');
+        const check = () => {
+            const limit = venue.selectedOptions[0].dataset.limit.split('+').reduce((a, b) => a + (+b || 0), 0);
+            const over = (+cap.value || 0) > limit;
+            cap.classList.toggle('is-invalid', over);
+            hint.className = 'form-text capacity-hint' + (over ? ' text-danger fw-semibold' : '');
+            hint.textContent = over ? `Exceeds venue limit of ${limit}` : `Venue max: ${limit}`;
+            save.disabled = over;
+        };
+        venue.addEventListener('change', check);
+        cap.addEventListener('input', check);
+    });
+
+    // AI panel: point the generate button at the chosen event
+    const aiBtn = document.getElementById('ai-trigger-btn');
+    const aiOut = document.getElementById('ai-output');
+    document.querySelectorAll('[data-ai-url]').forEach(item => item.addEventListener('click', () => {
+        aiBtn.setAttribute('hx-post', item.dataset.aiUrl);
+        aiBtn.dataset.eventId = item.dataset.aiEvent;
+        htmx.process(aiBtn);
+        document.getElementById('aiEventTitle').textContent = item.dataset.aiTitle;
+        aiOut.innerHTML = '';
+    }));
+
+    // "Use this" in the AI result → fill the edit modal and open it for review
+    window.applyAiText = (text) => {
+        const id = aiBtn.dataset.eventId;
+        const field = document.getElementById('desc' + id);
+        if (!field) return;
+        field.value = text;
+        bootstrap.Offcanvas.getInstance(document.getElementById('aiSidebar'))?.hide();
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('editModal' + id)).show();
+        field.style.transition = 'background-color .6s';
+        field.style.backgroundColor = '#f4f1ff';
+        setTimeout(() => field.style.backgroundColor = '', 900);
+    };
+
+    // Superusers can edit announcements inline (saved through the REST API)
+    document.querySelectorAll('[data-note-id] [contenteditable]').forEach(el => {
+        el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); el.blur(); } });
+        el.addEventListener('blur', async () => {
+            const box = el.closest('[data-note-id]');
+            const res = await fetch(`/api/notifications/${box.dataset.noteId}/`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                body: JSON.stringify({
+                    title: box.querySelector('.note-title').innerText.trim(),
+                    message: box.querySelector('.note-message').innerText.trim(),
+                }),
+            });
+            el.style.backgroundColor = res.ok ? '#e8faf3' : '#fff0f3';
+            setTimeout(() => el.style.backgroundColor = '', 700);
+        });
+    });
+})();
+</script>
+{% endblock %}

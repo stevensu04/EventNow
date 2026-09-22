@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<section class="hero">
+    <div class="container">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-6">
+                <span class="hero-badge mb-4"><span class="pill">NEW</span>AI drafts your event from one sentence</span>
+                <h1 class="mb-4">Brisbane events,<br><span class="text-gradient">beautifully run.</span></h1>
+                <p class="lead mb-4">Find something worth leaving the house for — or host your own. EventNow handles sessions, capacity, registrations and check-in so you can focus on the room.</p>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{% url 'event_list' %}" class="btn btn-gradient btn-lg">Explore events <i class="bi bi-arrow-right ms-1"></i></a>
+                    <a href="{% if user.is_authenticated %}{% url 'create_event' %}{% else %}{% url 'account_signup' %}{% endif %}" class="btn btn-ghost btn-lg">Host an event</a>
+                </div>
+
+                <div class="stat-strip row g-3 text-center text-sm-start">
+                    <div class="col-4"><div class="num">6</div><div class="small text-muted">Brisbane venues</div></div>
+                    <div class="col-4"><div class="num">&lt;1 min</div><div class="small text-muted">to register</div></div>
+                    <div class="col-4"><div class="num">.ics</div><div class="small text-muted">calendar tickets</div></div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="hero-visual ps-lg-4">
+                    <img src="{% static 'professional tech seminar.jpg' %}" alt="Audience at a tech seminar in Brisbane" width="800" height="600">
+                    <div class="float-card d-none d-sm-flex" style="left: -8px; bottom: 28px;">
+                        <span class="icon tone-mint"><i class="bi bi-check2-circle"></i></span>
+                        <div><div class="fw-bold small text-dark">Registration confirmed</div><div class="text-muted" style="font-size:.78rem">Ticket added to calendar</div></div>
+                    </div>
+                    <div class="float-card d-none d-sm-flex" style="right: -8px; top: 24px; animation-delay: -3s;">
+                        <span class="icon tone-coral"><i class="bi bi-fire"></i></span>
+                        <div><div class="fw-bold small text-dark">Only 3 spots left</div><div class="text-muted" style="font-size:.78rem">Street Food Lab</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% if upcoming_events %}
+<section class="section-sm">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-end mb-4 reveal">
+            <div>
+                <div class="eyebrow mb-2">Happening soon</div>
+                <h2 class="fw-bold mb-0">Upcoming in Brisbane</h2>
+            </div>
+            <a href="{% url 'event_list' %}" class="btn btn-ghost btn-sm d-none d-sm-inline-flex">View all <i class="bi bi-arrow-right ms-1"></i></a>
+        </div>
+        <div class="row g-4">
+            {% for event in upcoming_events %}
+            <div class="col-md-6 col-lg-4 reveal">{% include 'partials/event_card.html' %}</div>
+            {% endfor %}
+        </div>
+        <a href="{% url 'event_list' %}" class="btn btn-ghost w-100 mt-4 d-sm-none">View all events</a>
+    </div>
+</section>
+{% endif %}
+
+<section class="section">
+    <div class="container">
+        <div class="text-center mb-5 reveal">
+            <div class="eyebrow mb-2">For organisers</div>
+            <h2 class="fw-bold">Everything between the idea and the doors opening</h2>
+            <p class="text-muted mx-auto" style="max-width: 36rem;">Built for meetups, seminars and workshops — the events too small for enterprise tools and too important for a spreadsheet.</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-3 reveal">
+                <div class="en-card p-4 h-100">
+                    <span class="feature-icon tone-violet mb-3"><i class="bi bi-magic"></i></span>
+                    <h3 class="h6 fw-bold">AI event drafting</h3>
+                    <p class="text-muted small mb-0">Describe your event in a sentence. The AI fills in the title, date, venue and description for you.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3 reveal">
+                <div class="en-card p-4 h-100">
+                    <span class="feature-icon tone-coral mb-3"><i class="bi bi-diagram-3"></i></span>
+                    <h3 class="h6 fw-bold">Parallel sessions</h3>
+                    <p class="text-muted small mb-0">Run several tracks across rooms. Each room has a capacity limit that EventNow enforces for you.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3 reveal">
+                <div class="en-card p-4 h-100">
+                    <span class="feature-icon tone-mint mb-3"><i class="bi bi-person-check"></i></span>
+                    <h3 class="h6 fw-bold">Live check-in</h3>
+                    <p class="text-muted small mb-0">Search attendees and mark them as arrived in one click, with no page reloads.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3 reveal">
+                <div class="en-card p-4 h-100">
+                    <span class="feature-icon tone-amber mb-3"><i class="bi bi-file-earmark-spreadsheet"></i></span>
+                    <h3 class="h6 fw-bold">One-click export</h3>
+                    <p class="text-muted small mb-0">Download a CSV of every attendee and the sessions they picked, ready for your CRM or name badges.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="pb-5">
+    <div class="container">
+        <div class="cta-band reveal">
+            <div class="row align-items-center g-4 position-relative" style="z-index:1">
+                <div class="col-lg-8">
+                    <h2 class="fw-bold mb-2">Your next event is one sentence away.</h2>
+                    <p class="mb-0 opacity-75">Sign up free, switch on Professional (it's free in this demo) and publish in minutes.</p>
+                </div>
+                <div class="col-lg-4 text-lg-end">
+                    <a href="{% if user.is_authenticated %}{% url 'create_event' %}{% else %}{% url 'account_signup' %}{% endif %}" class="btn btn-light btn-lg fw-bold text-dark">Start hosting <i class="bi bi-arrow-right ms-1"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

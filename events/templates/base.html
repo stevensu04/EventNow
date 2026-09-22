@@ -1,0 +1,161 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}EventNow — Brisbane events, beautifully run{% endblock %}</title>
+    <meta name="description" content="{% block meta_description %}Discover Brisbane events and run your own — sessions, registrations and check-in in one place.{% endblock %}">
+    <meta name="theme-color" content="#6841f5">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%236841f5'/><stop offset='1' stop-color='%23ff5d7a'/></linearGradient></defs><rect width='32' height='32' rx='9' fill='url(%23g)'/><path d='M10 9v14M22 9v14M8 14h16' stroke='white' stroke-width='2.4' stroke-linecap='round'/></svg>">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="{% static 'css/eventnow.css' %}" rel="stylesheet">
+    <style>
+        .htmx-indicator { display: none; }
+        .htmx-request .htmx-indicator, .htmx-request.htmx-indicator { display: inline-block; }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+{% with url_name=request.resolver_match.url_name %}
+
+{% block header %}
+<nav class="en-nav navbar navbar-expand-lg py-2" aria-label="Main navigation">
+    <div class="container">
+        <a class="en-brand" href="{% url 'index' %}">
+            <span class="en-logo"><i class="bi bi-calendar2-event"></i></span>EventNow
+        </a>
+        <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navMain" aria-controls="navMain" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-list fs-3"></i>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navMain">
+            <ul class="navbar-nav mx-lg-auto my-3 my-lg-0 gap-lg-1">
+                <li class="nav-item"><a class="nav-link {% if url_name == 'event_list' or url_name == 'event_detail' %}active{% endif %}" href="{% url 'event_list' %}">Explore events</a></li>
+                <li class="nav-item"><a class="nav-link {% if url_name == 'pricing' %}active{% endif %}" href="{% url 'pricing' %}">Pricing</a></li>
+                <li class="nav-item"><a class="nav-link {% if url_name == 'about' %}active{% endif %}" href="{% url 'about' %}">About</a></li>
+                {% if user.is_authenticated %}
+                <li class="nav-item"><a class="nav-link {% if url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">Dashboard</a></li>
+                {% endif %}
+            </ul>
+
+            <div class="d-flex align-items-center gap-2 pb-3 pb-lg-0">
+                {% if user.is_authenticated %}
+                    <a href="{% url 'create_event' %}" class="btn btn-primary btn-sm d-none d-lg-inline-flex align-items-center gap-1">
+                        <i class="bi bi-plus-lg"></i>New event
+                    </a>
+                    <div class="dropdown">
+                        <button class="btn btn-ghost btn-sm d-flex align-items-center gap-2 ps-1 pe-2 py-1 rounded-pill" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="en-avatar">{{ user.username|slice:":1"|upper }}</span>
+                            <span class="fw-semibold">{{ user.username }}</span>
+                            <i class="bi bi-chevron-down small text-muted"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end mt-2">
+                            <li><a class="dropdown-item" href="{% url 'dashboard' %}"><i class="bi bi-grid me-2"></i>Dashboard</a></li>
+                            <li><a class="dropdown-item" href="{% url 'create_event' %}"><i class="bi bi-plus-circle me-2"></i>Create event</a></li>
+                            <li><a class="dropdown-item" href="{% url 'pricing' %}"><i class="bi bi-stars me-2"></i>My plan</a></li>
+                            {% if user.is_superuser %}
+                            <li><a class="dropdown-item" href="{% url 'admin:index' %}"><i class="bi bi-shield-lock me-2"></i>Admin</a></li>
+                            {% endif %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form method="post" action="{% url 'account_logout' %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="dropdown-item text-danger"><i class="bi bi-box-arrow-right me-2"></i>Log out</button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+                {% else %}
+                    <a href="{% url 'login' %}" class="btn btn-ghost btn-sm">Log in</a>
+                    <a href="{% url 'account_signup' %}" class="btn btn-primary btn-sm">Get started</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</nav>
+{% endblock %}
+
+{% if messages %}
+<div class="toast-stack" role="status" aria-live="polite">
+    {% for message in messages %}
+    <div class="en-toast {{ message.tags }}">
+        <i class="ti bi {% if message.tags == 'success' %}bi-check-circle-fill{% elif message.tags == 'error' %}bi-x-circle-fill{% elif message.tags == 'warning' %}bi-exclamation-triangle-fill{% else %}bi-info-circle-fill{% endif %}"></i>
+        <div class="flex-grow-1">{{ message }}</div>
+        <button type="button" class="btn-close btn-sm" aria-label="Dismiss" onclick="dismissToast(this.parentElement)"></button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<main>
+    {% block content %}{% endblock %}
+</main>
+
+{% block footer_section %}
+<footer class="en-footer">
+    <div class="container">
+        <div class="row gy-4 align-items-center">
+            <div class="col-md-5">
+                <a class="en-brand mb-2" href="{% url 'index' %}"><span class="en-logo"><i class="bi bi-calendar2-event"></i></span>EventNow</a>
+                <p class="text-muted small mb-0 mt-2">Brisbane events, beautifully run. A portfolio project built with Django &amp; HTMX.</p>
+            </div>
+            <div class="col-md-7">
+                <div class="d-flex flex-wrap gap-4 justify-content-md-end small">
+                    <a href="{% url 'event_list' %}">Explore events</a>
+                    <a href="{% url 'pricing' %}">Pricing</a>
+                    <a href="{% url 'about' %}">About</a>
+                    <a href="https://github.com/stevensu04/EventNow" target="_blank" rel="noopener"><i class="bi bi-github me-1"></i>Source</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+{% endblock %}
+
+{% endwith %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.4/dist/htmx.min.js"></script>
+<script>
+    function dismissToast(el) {
+        el.classList.add('is-leaving');
+        setTimeout(() => el.remove(), 300);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Toasts fade out on their own; errors stay a little longer
+        document.querySelectorAll('.en-toast').forEach((toast, i) => {
+            const wait = toast.classList.contains('error') ? 7000 : 4500;
+            setTimeout(() => dismissToast(toast), wait + i * 300);
+        });
+
+        // Tooltips
+        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
+
+        // Reveal-on-scroll + animate capacity bars into view
+        const io = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) return;
+                entry.target.classList.add('is-visible');
+                entry.target.querySelectorAll('.seat-bar > span[data-fill]').forEach(bar => bar.style.width = bar.dataset.fill + '%');
+                io.unobserve(entry.target);
+            });
+        }, { threshold: 0.1 });
+        document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+        document.querySelectorAll('.seat-bar').forEach(bar => io.observe(bar.parentElement));
+    });
+
+    // Buttons with data-loading show a spinner while their form submits
+    document.addEventListener('submit', e => {
+        const btn = e.target.querySelector('button[data-loading]');
+        if (btn) { btn.classList.add('is-loading'); btn.disabled = true; }
+    });
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

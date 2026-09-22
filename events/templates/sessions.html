@@ -1,0 +1,207 @@
+{% extends 'base.html' %}
+{% load eventnow %}
+
+{% block title %}Sessions · {{ event.title }}{% endblock %}
+
+{% block content %}
+<div class="container pb-5">
+    <header class="page-head d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3">
+        <div>
+            <a href="{% url 'dashboard' %}" class="small text-decoration-none fw-semibold"><i class="bi bi-arrow-left me-1"></i>Dashboard</a>
+            <h1 class="h2 fw-bold mt-2 mb-1">Schedule</h1>
+            <p class="text-muted mb-0">{{ event.title }} · {{ event.date|date:"D j M Y" }} · {{ event.location }}</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'manage_attendees' event.id %}" class="btn btn-ghost"><i class="bi bi-person-check me-1"></i>Attendees</a>
+            <a href="{% url 'event_detail' event.id %}" class="btn btn-ghost"><i class="bi bi-eye me-1"></i>Preview</a>
+        </div>
+    </header>
+
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <form method="post" class="en-card p-4" id="addSessionForm">
+                {% csrf_token %}
+                <h2 class="h6 fw-bold mb-3"><i class="bi bi-plus-circle me-2 text-primary"></i>Add a session</h2>
+                <div class="mb-3">
+                    <label class="form-label" for="add-title">Title</label>
+                    <input id="add-title" type="text" name="title" class="form-control" placeholder="Django best practices" required maxlength="200">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="add-speaker">Speaker</label>
+                    <input id="add-speaker" type="text" name="speaker" class="form-control" placeholder="Dr. Jane Doe" required maxlength="200">
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label" for="add-start">Starts</label>
+                        <input id="add-start" type="time" name="start_time" class="form-control" step="300" required>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label" for="add-end">Ends</label>
+                        <input id="add-end" type="time" name="end_time" class="form-control" step="300" required>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="add-space-select">Room</label>
+                    <select name="track" id="add-space-select" class="form-select" required>
+                        <option value="" disabled selected>Choose a room…</option>
+                        {% for name, limit in spaces_info.items %}
+                        <option value="{{ name }}" data-limit="{{ limit }}">{{ name }} (max {{ limit }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label" for="add-capacity-input">Seats</label>
+                    <input type="number" name="max_capacity" id="add-capacity-input" class="form-control" min="1" placeholder="25" required>
+                    <div id="add-capacity-hint" class="form-text">Pick a room to see its limit.</div>
+                </div>
+                <button type="submit" class="btn btn-primary w-100" data-loading>
+                    <span class="spinner-border spinner-border-sm me-2 btn-spinner"></span><span class="btn-label">Add to schedule</span>
+                </button>
+            </form>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="en-card overflow-hidden">
+                <div class="p-3 px-4 border-bottom d-flex justify-content-between align-items-center">
+                    <h2 class="h6 fw-bold mb-0">Running order</h2>
+                    <span class="small text-muted">{{ sessions|length }} session{{ sessions|length|pluralize }}</span>
+                </div>
+                {% if sessions %}
+                <div class="table-responsive">
+                    <table class="table en-table">
+                        <thead>
+                            <tr><th class="ps-4">Time</th><th>Session</th><th style="min-width:140px">Room &amp; seats</th><th class="text-end pe-4"><span class="visually-hidden">Actions</span></th></tr>
+                        </thead>
+                        <tbody>
+                            {% for session in sessions %}
+                            <tr>
+                                <td class="ps-4 text-nowrap">
+                                    <div class="fw-bold text-dark">{{ session.start_time|time:"H:i" }}</div>
+                                    <div class="small text-muted">to {{ session.end_time|time:"H:i" }}</div>
+                                </td>
+                                <td>
+                                    <div class="fw-semibold text-dark">{{ session.title }}</div>
+                                    <div class="small text-muted"><i class="bi bi-mic me-1"></i>{{ session.speaker }}</div>
+                                </td>
+                                <td>
+                                    <div class="small fw-semibold text-dark mb-1">{{ session.track }}</div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="seat-bar flex-grow-1 {% seat_state session.registered session.max_capacity %}"><span data-fill="{{ session.registered|percent_of:session.max_capacity }}"></span></div>
+                                        <span class="small text-muted text-nowrap">{{ session.registered }}/{{ session.max_capacity }}</span>
+                                    </div>
+                                </td>
+                                <td class="text-end pe-4 text-nowrap">
+                                    <button class="btn btn-ghost btn-icon edit-session-btn" data-bs-toggle="modal" data-bs-target="#editSessionModal"
+                                            data-url="{% url 'edit_session' event.id session.id %}"
+                                            data-title="{{ session.title }}" data-speaker="{{ session.speaker }}"
+                                            data-start="{{ session.start_time|time:'H:i' }}" data-end="{{ session.end_time|time:'H:i' }}"
+                                            data-track="{{ session.track }}" data-capacity="{{ session.max_capacity }}"
+                                            aria-label="Edit {{ session.title }}"><i class="bi bi-pencil"></i></button>
+                                    <form action="{% url 'delete_session' event.id session.id %}" method="post" class="d-inline" onsubmit="return confirm('Delete “{{ session.title|escapejs }}”? Attendees will be removed from this session.');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-ghost btn-icon text-danger" aria-label="Delete {{ session.title }}"><i class="bi bi-trash"></i></button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <span class="feature-icon tone-violet"><i class="bi bi-calendar3-week"></i></span>
+                    <h3 class="h5 fw-bold">No sessions yet</h3>
+                    <p class="text-muted mx-auto mb-0" style="max-width: 24rem;">Add talks, workshops or breaks on the left. Run them in parallel across different rooms if you like.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editSessionModal" tabindex="-1" aria-labelledby="editSessionLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form id="editSessionForm" method="post" class="modal-content border-0 rounded-4">
+            {% csrf_token %}
+            <div class="modal-header border-0 pb-0 px-4 pt-4">
+                <h2 class="modal-title h5 fw-bold" id="editSessionLabel">Edit session</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body px-4">
+                <div class="mb-3"><label class="form-label" for="edit-title">Title</label><input type="text" name="title" id="edit-title" class="form-control" required></div>
+                <div class="mb-3"><label class="form-label" for="edit-speaker">Speaker</label><input type="text" name="speaker" id="edit-speaker" class="form-control" required></div>
+                <div class="row g-2 mb-3">
+                    <div class="col-6"><label class="form-label" for="edit-start">Starts</label><input type="time" name="start_time" id="edit-start" class="form-control" required></div>
+                    <div class="col-6"><label class="form-label" for="edit-end">Ends</label><input type="time" name="end_time" id="edit-end" class="form-control" required></div>
+                </div>
+                <div class="row g-2">
+                    <div class="col-7">
+                        <label class="form-label" for="edit-track">Room</label>
+                        <select name="track" id="edit-track" class="form-select">
+                            {% for name, limit in spaces_info.items %}<option value="{{ name }}" data-limit="{{ limit }}">{{ name }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-5">
+                        <label class="form-label" for="edit-capacity">Seats</label>
+                        <input type="number" min="1" name="max_capacity" id="edit-capacity" class="form-control" required>
+                    </div>
+                </div>
+                <div id="edit-capacity-hint" class="form-text"></div>
+            </div>
+            <div class="modal-footer border-0 px-4 pb-4">
+                <button type="button" class="btn btn-ghost" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary" data-loading><span class="spinner-border spinner-border-sm me-2 btn-spinner"></span><span class="btn-label">Save changes</span></button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(() => {
+    function capacityCheck(selectId, inputId, hintId) {
+        const select = document.getElementById(selectId);
+        const input = document.getElementById(inputId);
+        const hint = document.getElementById(hintId);
+        const submit = input.form.querySelector('[type=submit]');
+        const run = () => {
+            const opt = select.selectedOptions[0];
+            if (!opt || !opt.dataset.limit) return;
+            const limit = +opt.dataset.limit, n = +input.value || 0;
+            const over = n > limit;
+            input.max = limit;
+            input.classList.toggle('is-invalid', over);
+            hint.className = 'form-text' + (over ? ' text-danger fw-semibold' : '');
+            hint.textContent = over ? `${opt.value} only holds ${limit}` : `${opt.value} holds up to ${limit}`;
+            submit.disabled = over;
+        };
+        select.addEventListener('change', () => { if (!input.value) input.value = select.selectedOptions[0].dataset.limit; run(); });
+        input.addEventListener('input', run);
+        return run;
+    }
+    capacityCheck('add-space-select', 'add-capacity-input', 'add-capacity-hint');
+    const checkEdit = capacityCheck('edit-track', 'edit-capacity', 'edit-capacity-hint');
+
+    // End time must be after start
+    document.querySelectorAll('form').forEach(form => {
+        const start = form.querySelector('[name=start_time]'), end = form.querySelector('[name=end_time]');
+        if (!start || !end) return;
+        const check = () => end.setCustomValidity(start.value && end.value && end.value <= start.value ? 'End time must be after the start time' : '');
+        start.addEventListener('input', check); end.addEventListener('input', check);
+    });
+
+    document.querySelectorAll('.edit-session-btn').forEach(btn => btn.addEventListener('click', () => {
+        const d = btn.dataset;
+        document.getElementById('editSessionForm').action = d.url;
+        document.getElementById('edit-title').value = d.title;
+        document.getElementById('edit-speaker').value = d.speaker;
+        document.getElementById('edit-start').value = d.start;
+        document.getElementById('edit-end').value = d.end;
+        document.getElementById('edit-track').value = d.track;
+        document.getElementById('edit-capacity').value = d.capacity;
+        checkEdit();
+    }));
+})();
+</script>
+{% endblock %}

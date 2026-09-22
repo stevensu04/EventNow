@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block title %}Page not found · EventNow{% endblock %}
+{% block content %}
+<section class="hero text-center">
+    <div class="container" style="max-width: 36rem;">
+        <div class="display-1 fw-bold text-gradient mb-2" style="font-family: var(--en-font-display);">404</div>
+        <h1 class="h3 fw-bold mb-2">This page has left the building</h1>
+        <p class="text-muted mb-4">The link may be old, or the event may have been archived.</p>
+        <a href="{% url 'event_list' %}" class="btn btn-primary">Browse events</a>
+        <a href="{% url 'index' %}" class="btn btn-ghost ms-2">Home</a>
+    </div>
+</section>
+{% endblock %}

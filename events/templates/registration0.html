@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% load eventnow %}
+
+{% block title %}Explore events in Brisbane · EventNow{% endblock %}
+
+{% block content %}
+<section class="search-hero">
+    <div class="container">
+        <div class="text-center mb-4">
+            <div class="eyebrow mb-2">Explore</div>
+            <h1 class="fw-bold mb-2">Find your next event in Brisbane</h1>
+            <p class="text-muted mb-0">Tech meetups, pitch nights, food labs and more, all happening soon.</p>
+        </div>
+
+        <form method="get" action="{% url 'event_list' %}" class="search-box d-flex flex-column flex-sm-row gap-1 mx-auto" style="max-width: 760px;" role="search">
+            {% if category %}<input type="hidden" name="category" value="{{ category }}">{% endif %}
+            <div class="d-flex align-items-center flex-grow-1 ps-2">
+                <i class="bi bi-search text-muted"></i>
+                <label for="q" class="visually-hidden">Search events</label>
+                <input id="q" type="search" name="q" class="form-control" placeholder="Search by name or topic" value="{{ query }}">
+            </div>
+            <span class="divider"></span>
+            <div class="d-flex align-items-center ps-2" style="min-width: 210px;">
+                <i class="bi bi-geo-alt text-muted"></i>
+                <label for="location" class="visually-hidden">Venue</label>
+                <select id="location" name="location" class="form-select" onchange="this.form.submit()">
+                    <option value="">Any venue</option>
+                    {% for venue in venues %}
+                    <option value="{{ venue }}" {% if venue == location %}selected{% endif %}>{{ venue }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary px-4">Search</button>
+        </form>
+
+        <div class="chip-row justify-content-sm-center mt-4" aria-label="Filter by category">
+            <a href="?{% if query %}q={{ query|urlencode }}&{% endif %}{% if location %}location={{ location|urlencode }}{% endif %}" class="filter-chip {% if not category %}active{% endif %}">All</a>
+            {% for code, label in categories %}
+            <a href="?category={{ code }}{% if query %}&q={{ query|urlencode }}{% endif %}{% if location %}&location={{ location|urlencode }}{% endif %}" class="filter-chip {% if category == code %}active{% endif %}">
+                <i class="bi {{ code|category_icon }}"></i>{{ label }}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section class="container pb-5">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <p class="text-muted small mb-0">
+            {{ events|length }} event{{ events|length|pluralize }}
+            {% if query %} matching “<strong class="text-dark">{{ query }}</strong>”{% endif %}
+        </p>
+        {% if query or category or location %}
+        <a href="{% url 'event_list' %}" class="small fw-semibold text-decoration-none"><i class="bi bi-x-circle me-1"></i>Clear filters</a>
+        {% endif %}
+    </div>
+
+    <div class="row g-4">
+        {% for event in events %}
+        <div class="col-sm-6 col-lg-4 reveal">{% include 'partials/event_card.html' %}</div>
+        {% empty %}
+        <div class="col-12">
+            <div class="en-card empty-state">
+                <span class="feature-icon tone-violet"><i class="bi bi-calendar-x"></i></span>
+                <h2 class="h5 fw-bold">No events match that search</h2>
+                <p class="text-muted mx-auto mb-4" style="max-width: 26rem;">Try a different keyword or category, or clear the filters to see everything coming up.</p>
+                <div class="d-flex gap-2 justify-content-center flex-wrap">
+                    <a href="{% url 'event_list' %}" class="btn btn-ghost">See all events</a>
+                    <a href="{% url 'create_event' %}" class="btn btn-primary">Host your own</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}
