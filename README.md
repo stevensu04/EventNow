@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/stevensu04/EventNow/actions/workflows/ci.yml/badge.svg)](https://github.com/stevensu04/EventNow/actions/workflows/ci.yml)
 
-**Live demo:** https://event-now-eight.vercel.app
+**Live demo:** https://eventnow-brisbane.vercel.app
 
 ---
 

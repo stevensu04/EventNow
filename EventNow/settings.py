@@ -45,14 +45,19 @@ if not SECRET_KEY:
         )
 
 ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "localhost,127.0.0.1")
-# Vercel exposes the deployment host; allow it automatically (production + previews)
-if os.getenv("VERCEL_URL"):
-    ALLOWED_HOSTS.append(os.environ["VERCEL_URL"])
-if os.getenv("VERCEL_PROJECT_PRODUCTION_URL"):
-    ALLOWED_HOSTS.append(os.environ["VERCEL_PROJECT_PRODUCTION_URL"])
+
+if os.getenv("VERCEL"):
+    # Every host Vercel can serve this project on: the deployment URL, the production
+    # domain, and any *.vercel.app alias (so renaming the project can't take the site down).
+    ALLOWED_HOSTS += [env("VERCEL_URL"), env("VERCEL_PROJECT_PRODUCTION_URL"), ".vercel.app"]
+    ALLOWED_HOSTS = [host for host in ALLOWED_HOSTS if host]
 
 CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS")
-CSRF_TRUSTED_ORIGINS += [f"https://{host}" for host in ALLOWED_HOSTS if host not in ("localhost", "127.0.0.1")]
+CSRF_TRUSTED_ORIGINS += [
+    f"https://*{host}" if host.startswith(".") else f"https://{host}"
+    for host in ALLOWED_HOSTS
+    if host not in ("localhost", "127.0.0.1")
+]
 
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
