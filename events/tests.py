@@ -39,7 +39,8 @@ class BaseTestCase(TestCase):
 class PublicPagesTests(BaseTestCase):
     def test_public_pages_render(self):
         for name, args in [("index", []), ("event_list", []), ("about", []), ("pricing", []),
-                           ("event_detail", [self.event.id]), ("login", []), ("account_signup", [])]:
+                           ("event_detail", [self.event.id]), ("login", []), ("account_signup", []),
+                           ("privacy", []), ("terms", [])]:
             with self.subTest(page=name):
                 self.assertEqual(self.client.get(reverse(name, args=args)).status_code, 200)
 

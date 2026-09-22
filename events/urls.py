@@ -13,6 +13,8 @@ urlpatterns = [
     # Public pages
     path('', views.landing_page, name='index'),
     path('about/', views.about_page, name='about'),
+    path('privacy/', views.legal_page, {'template': 'privacy.html', 'title': 'Privacy Policy'}, name='privacy'),
+    path('terms/', views.legal_page, {'template': 'terms.html', 'title': 'Terms of Service'}, name='terms'),
     path('pricing/', views.pricing_view, name='pricing'),
     path('pricing/switch/', views.switch_plan, name='switch_plan'),
 

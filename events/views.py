@@ -116,6 +116,11 @@ def about_page(request):
     return render(request, 'about.html')
 
 
+def legal_page(request, template, title):
+    """Privacy policy / terms — also required by Google before an OAuth app can be published."""
+    return render(request, template, {'page_title': title, 'updated': date(2026, 9, 23)})
+
+
 def registration0_page(request):
     """Public discovery page with search, category and venue filters."""
     query = request.GET.get('q', '').strip()

@@ -1,0 +1,31 @@
+{% extends 'legal.html' %}
+
+{% block legal_body %}
+<p>EventNow is a demonstration event-management app. This page explains what it collects and why.</p>
+
+<h2 class="h5 fw-bold mt-4">What we collect</h2>
+<ul>
+    <li><strong>When you register for an event:</strong> your name, email address and the sessions you choose.</li>
+    <li><strong>When you create an account:</strong> your username and email address, plus a securely hashed password.</li>
+    <li><strong>If you sign in with Google:</strong> your name, email address and profile picture URL, taken from your Google profile. EventNow never receives your Google password and requests no other access to your Google account.</li>
+    <li><strong>Automatically:</strong> standard server logs (IP address, browser type, pages visited) kept by our hosting provider for security and troubleshooting.</li>
+</ul>
+
+<h2 class="h5 fw-bold mt-4">How it is used</h2>
+<p>Your details are used only to run the events you sign up for or host: confirming registrations, issuing tickets, and letting event organisers manage their attendee lists. We do not sell your data, share it with advertisers, or use it for marketing.</p>
+
+<h2 class="h5 fw-bold mt-4">Who can see it</h2>
+<p>An event's organiser can see the name, email address, sessions and attendance status of people registered for that event, and can export that list as a CSV. Organisers cannot see data for events they do not run.</p>
+
+<h2 class="h5 fw-bold mt-4">Where it is stored</h2>
+<p>Data is stored in a PostgreSQL database hosted by Neon in Sydney, Australia, and served through Vercel. Both providers process data on our behalf.</p>
+
+<h2 class="h5 fw-bold mt-4">AI features</h2>
+<p>Event titles and descriptions that organisers submit to the AI drafting tools are sent to OpenAI to generate text. Attendee details are never sent to OpenAI.</p>
+
+<h2 class="h5 fw-bold mt-4">Your choices</h2>
+<p>You can ask for your data to be corrected or deleted at any time by opening an issue on GitHub. Because this is a demonstration project, data may be reset without notice.</p>
+
+<h2 class="h5 fw-bold mt-4">Cookies</h2>
+<p>EventNow sets only the cookies it needs to work: a session cookie when you log in, and a CSRF cookie that protects forms. There is no advertising or third-party tracking.</p>
+{% endblock %}
