@@ -122,8 +122,8 @@ TEMPLATES = [
 # Neon Postgres in production via DATABASE_URL; local SQLite otherwise.
 
 DATABASES = {
-    "default": dj_database_url.config(
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+    "default": dj_database_url.parse(
+        env("DATABASE_URL", f"sqlite:///{BASE_DIR / 'db.sqlite3'}"),
         conn_max_age=0,  # serverless: don't hold connections between invocations
         ssl_require=env("DATABASE_URL").startswith("postgres"),
     )
