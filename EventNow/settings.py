@@ -18,24 +18,31 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
 
+def env(name, default=""):
+    """Like os.getenv, but an empty value (e.g. a blank Vercel variable) counts as unset."""
+    return os.getenv(name, "").strip() or default
+
+
 def env_bool(name, default=False):
-    return os.getenv(name, str(default)).strip().lower() in ("1", "true", "yes", "on")
+    return env(name, str(default)).lower() in ("1", "true", "yes", "on")
 
 
 def env_list(name, default=""):
-    return [item.strip() for item in os.getenv(name, default).split(",") if item.strip()]
+    return [item.strip() for item in env(name, default).split(",") if item.strip()]
 
 
 # --- Core security -----------------------------------------------------------
 
 DEBUG = env_bool("DEBUG", False)
 
-SECRET_KEY = os.getenv("SECRET_KEY")
+SECRET_KEY = env("SECRET_KEY")
 if not SECRET_KEY:
     if DEBUG:
         SECRET_KEY = "dev-only-insecure-key-do-not-use-in-production"
     else:
-        raise RuntimeError("SECRET_KEY environment variable is required when DEBUG is off.")
+        raise RuntimeError(
+            "SECRET_KEY is not set. Add it in Vercel → Project → Settings → Environment Variables."
+        )
 
 ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "localhost,127.0.0.1")
 # Vercel exposes the deployment host; allow it automatically (production + previews)
@@ -118,7 +125,7 @@ DATABASES = {
     "default": dj_database_url.config(
         default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
         conn_max_age=0,  # serverless: don't hold connections between invocations
-        ssl_require=os.getenv("DATABASE_URL", "").startswith("postgres"),
+        ssl_require=env("DATABASE_URL").startswith("postgres"),
     )
 }
 
@@ -150,8 +157,8 @@ ACCOUNT_DEFAULT_HTTP_PROTOCOL = "http" if DEBUG else "https"
 ACCOUNT_MESSAGES = False
 SOCIALACCOUNT_AUTO_SIGNUP = True
 
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
-GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
+GOOGLE_CLIENT_ID = env("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = env("GOOGLE_CLIENT_SECRET")
 GOOGLE_LOGIN_ENABLED = bool(GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET)
 
 SOCIALACCOUNT_PROVIDERS = {
@@ -206,9 +213,9 @@ STORAGES = {
 
 # --- AI features -------------------------------------------------------------
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-5.4-mini")
-AI_DAILY_LIMIT = int(os.getenv("AI_DAILY_LIMIT", "10"))
+OPENAI_API_KEY = env("OPENAI_API_KEY")
+OPENAI_MODEL = env("OPENAI_MODEL", "gpt-5.4-mini")
+AI_DAILY_LIMIT = int(env("AI_DAILY_LIMIT", "10"))
 
 LOGGING = {
     "version": 1,
